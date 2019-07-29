@@ -139,11 +139,15 @@ static DFMiniMp3 <SoftwareSerial, Mp3Notify> mp3(mySoftwareSerial);
 
 void shuffleQueue() {
     // Queue für die Zufallswiedergabe erstellen
-    for (uint8_t x = 0; x < numTracksInFolder - firstTrack + 1; x++)
+    for (uint8_t x = 0; x < numTracksInFolder - firstTrack + 1; x++){
         queue[x] = x + firstTrack;
+    }
+    
     // Rest mit 0 auffüllen
-    for (uint8_t x = numTracksInFolder - firstTrack + 1; x < 255; x++)
+    for (uint8_t x = numTracksInFolder - firstTrack + 1; x < 255; x++){
         queue[x] = 0;
+    }
+    
     // Queue mischen
     for (uint8_t i = 0; i < numTracksInFolder - firstTrack + 1; i++) {
         uint8_t j = random(0, numTracksInFolder - firstTrack + 1);
@@ -205,8 +209,9 @@ void loadSettingsFromFlash() {
     Serial.println(F("=== loadSettingsFromFlash()"));
     int address = sizeof(myFolder->folder) * 100;
     EEPROM.get(address, mySettings);
-    if (mySettings.cookie != cardCookie)
+    if (mySettings.cookie != cardCookie){
         resetSettings();
+    }
     migrateSettings(mySettings.version);
 
     Serial.print(F("Version: "));
@@ -348,6 +353,7 @@ public:
     FreezeDance(void) {
         Serial.println(F("=== FreezeDance()"));
         if (isPlaying()) {
+          // @todo maybe should be replaced with time method
             delay(1000);
             mp3.playAdvertisement(ADV_FREEZE_INTRO);
             delay(500);
@@ -781,6 +787,8 @@ void waitForTrackToFinish() {
     do {
         mp3.loop();
     } while (!isPlaying() && millis() < currentTime + 1000);
+
+    // @todo check if delay is needed
     delay(1000);
     do {
         mp3.loop();
@@ -792,11 +800,9 @@ void setup() {
     Serial.begin(115200); // Es gibt ein paar Debug Ausgaben über die serielle Schnittstelle
 
     // Wert für randomSeed() erzeugen durch das mehrfache Sammeln von rauschenden LSBs eines offenen Analogeingangs
-    uint32_t ADC_LSB;
     uint32_t ADCSeed;
     for (uint8_t i = 0; i < 128; i++) {
-        ADC_LSB = analogRead(openAnalogPin) & 0x1;
-        ADCSeed ^= ADC_LSB << (i % 32);
+        ADCSeed ^= (analogRead(openAnalogPin) & 0x1) << (i % 32);
     }
     randomSeed(ADCSeed); // Zufallsgenerator initialisieren
 
@@ -821,6 +827,7 @@ void setup() {
     // DFPlayer Mini initialisieren
     mp3.begin();
     // Zwei Sekunden warten bis der DFPlayer Mini initialisiert ist
+    // @todo check if delay is needed
     delay(2000);
     volume = mySettings.initVolume;
     mp3.setVolume(volume);
@@ -884,8 +891,9 @@ void volumeUpButton() {
     
     Serial.println(F("=== volumeUp()"));
     if (volume < mySettings.maxVolume) {
-        mp3.increaseVolume();
-        volume++;
+        mp3.setVolume(++volume);
+        /*mp3.increaseVolume();
+        volume++;*/
     }
     Serial.println(volume);
 }
@@ -899,8 +907,9 @@ void volumeDownButton() {
     
     Serial.println(F("=== volumeDown()"));
     if (volume > mySettings.minVolume) {
-        mp3.decreaseVolume();
-        volume--;
+        mp3.setVolume(--volume);
+        /*mp3.decreaseVolume();
+        volume--;*/
     }
     Serial.println(volume);
 }
@@ -908,8 +917,9 @@ void volumeDownButton() {
 void nextButton() {
     if (activeModifier != NULL)
     {
-        if (activeModifier->handleNextButton() == true)
+        if (activeModifier->handleNextButton() == true){
             return;
+        }
     }
     nextTrack(random(65536));
     // @todo maybe replace with non blocking method
@@ -1661,7 +1671,20 @@ bool readCard(nfcTagObject *nfcTag) {
     } else if (piccType == MFRC522::PICC_TYPE_MIFARE_UL) {
         byte buffer2[18];
         byte size2 = sizeof(buffer2);
-
+        uint8_t x = 0;
+        for(uint8_t i = 0; i <= 12; i+=4)
+        {
+          status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(8+ x++, buffer2, &size2);
+          if (status != MFRC522::STATUS_OK) {
+              Serial.print(F("MIFARE_Read_"));
+              Serial.print(x);
+              Serial.print(F(" failed: "));
+              Serial.println(mfrc522.GetStatusCodeName(status));
+              return false;
+          }
+          memcpy(buffer + i, buffer2, 4);
+        }
+        /*
         status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(8, buffer2, &size2);
         if (status != MFRC522::STATUS_OK) {
             Serial.print(F("MIFARE_Read_1() failed: "));
@@ -1693,6 +1716,7 @@ bool readCard(nfcTagObject *nfcTag) {
             return false;
         }
         memcpy(buffer + 12, buffer2, 4);
+        */
     }
 
     Serial.print(F("Data on Card "));
@@ -1850,7 +1874,7 @@ void writeCard(nfcTagObject nfcTag) {
     } else if (mifareType == MFRC522::PICC_TYPE_MIFARE_UL) {
         byte buffer2[16];
         byte size2 = sizeof(buffer2);
-
+/*
         memset(buffer2, 0, size2);
         memcpy(buffer2, buffer, 4);
         status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(8, buffer2, 16);
@@ -1866,6 +1890,15 @@ void writeCard(nfcTagObject nfcTag) {
         memset(buffer2, 0, size2);
         memcpy(buffer2, buffer + 12, 4);
         status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(11, buffer2, 16);
+        */
+
+        uint8_t x = 0;
+        for(uint8_t i=0 ; i <=12; i+=4)
+        {
+          memset(buffer2, 0, size2);
+          memcpy(buffer2, buffer + i, 4);
+          status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(8 + x++, buffer2, 16);
+        }
     }
 
     if (status != MFRC522::STATUS_OK) {
