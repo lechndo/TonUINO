@@ -919,6 +919,7 @@ void playFolder() {
     Serial.print(F(" bis "));
     Serial.println(myFolder->special2);
     numTracksInFolder = myFolder->special2;
+    firstTrack = myFolder->special; // set boundary for jump back mentioned by stockf in #37
     currentTrack = random(myFolder->special, numTracksInFolder + 1);
     Serial.println(currentTrack);
     mp3.playFolderTrack(myFolder->folder, currentTrack);
@@ -930,6 +931,7 @@ void playFolder() {
     Serial.print(myFolder->special);
     Serial.print(F(" bis "));
     Serial.println(myFolder->special2);
+    firstTrack = myFolder->special; // set boundary for jump back mentioned by stockf in #37
     numTracksInFolder = myFolder->special2;
     currentTrack = myFolder->special;
     mp3.playFolderTrack(myFolder->folder, currentTrack);
