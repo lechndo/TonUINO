@@ -29,3 +29,15 @@ Temporary Items
 
 # TonUINO
 /tools/*.pyc
+
+/.vs/TonUINO/v15/.suo
+/__vm/.TonUINO.vsarduino.h
+/__vm/Compile.vmps.xml
+/__vm/Configuration.Debug.vmps.xml
+/__vm/Configuration.Release.vmps.xml
+/Tonuino.ino.orig
+/TonUINO.vcxproj
+/TonUINO.vcxproj.filters
+/TonUINO.vcxproj.user
+/.vscode/arduino.json
+/.vscode/c_cpp_properties.json
