@@ -647,8 +647,10 @@ class LearnToCalculate: public Modifier {
         {
           mp3.playMp3FolderTrack(802); // cancelled
           waitForTrackToFinish();
+          mp3.pause();
           activeModifier = NULL;
           delete this;
+          return true;
         }
         break;
       }
@@ -683,7 +685,6 @@ class LearnToCalculate: public Modifier {
       return this->handlePreviousButton();
     }
     virtual bool handleRFID(nfcTagObject *newCard) {
-      
       return true;
     }
     virtual void loop(){
@@ -709,15 +710,14 @@ class LearnToCalculate: public Modifier {
         this->opr = this->mode;
       }
 
-      if(isPlaying()){
-        myCard.nfcFolderSettings.folder = 0;
-        myCard.nfcFolderSettings.mode = 0;
-        mp3.pause();
-        mp3.stop();
-      }
+      // clear old card
+      myCard.nfcFolderSettings.folder = 0;
+      myCard.nfcFolderSettings.mode = 0;
+      mp3.pause();
 
       mp3.playMp3FolderTrack(410); // intro 
       waitForTrackToFinish();
+
       mp3.playMp3FolderTrack(429); // choose maximum
       waitForTrackToFinish();
       this->lastAction = millis();
