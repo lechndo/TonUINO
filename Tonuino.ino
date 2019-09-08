@@ -241,6 +241,9 @@ class Modifier {
     virtual bool handleNext() {
       return false;
     }
+    virtual bool handleShortCut(uint8_t shortcut){
+      return false;
+    }
     virtual bool handlePrevious() {
       return false;
     }
@@ -479,6 +482,252 @@ class RepeatSingleModifier: public Modifier {
       return 6;
     }
 };
+
+class LearnToCalculate: public Modifier {
+  private:
+  uint8_t mode = 1; // learn mode (1 = addition, 2 = subtraction, 3 = multiplication, 4 = division, 5 = mixed)
+  uint8_t upperBound = 0; // max number (can not exceed 254)
+  uint8_t opA = 0;
+  uint8_t opB = 0;
+  uint8_t result = 0;
+  uint8_t opr = 0; // operator, see mode (0..3)
+  unsigned long lastAction = 0;
+
+  void playResult(){
+    this->lastAction = millis();
+    if(this->result > 255){
+      result = 255;
+    }
+    
+    mp3.playMp3FolderTrack(this->result);
+    waitForTrackToFinish();
+  }
+
+  void nextQuestion(bool repeat = false){
+    this->lastAction = millis();
+      if(!repeat){
+          if(this->mode == 5)
+          {
+            this->opr = random(1,5);
+          }
+          else{
+            this->opr = this->mode;
+          }
+          this->result = 0;
+          
+          switch(this->opr){ 
+            case 2: // subtraction
+            {
+              this->opA = random(2, this->upperBound);
+              this->opB = random(1, this->opA);
+            }
+            break;
+            case 3: // multiplication
+            {
+              this->opA = random(1, this->upperBound);
+              this->opB = random(1, floor(this->upperBound/this->opA));
+
+            }
+            break;
+            case 4: // division
+            {
+              this->opA = random(2, this->upperBound);
+              do{
+                this->opB = random(1, this->upperBound);
+              }while(this->opA % this->opB  != 0);
+            }
+            break;
+            default: // addition
+            {
+              this->opA = random(1, this->upperBound-1);
+              this->opB = random(1, this->upperBound - this->opA);
+            }
+            break;
+          }
+      }
+        mp3.playMp3FolderTrack(411); // question "how much is"
+         waitForTrackToFinish();
+        mp3.playMp3FolderTrack(this->opA); // 1..254
+         waitForTrackToFinish();
+        mp3.playMp3FolderTrack(411 + this->opr); // 402, 403, 404, 405
+         waitForTrackToFinish();
+        mp3.playMp3FolderTrack(this->opB); // 1..254
+         waitForTrackToFinish();
+         Serial.print(F("Wieviel ist "));
+         Serial.print(this->opA);
+         switch (this->opr)
+         {
+         case 1:
+           Serial.print(F(" + "));
+           break;
+         case 2:
+          Serial.print(F(" - "));
+          break;
+          case 3:
+          Serial.print(F(" x "));
+          break;
+          case 4:
+          Serial.print(F(" / "));
+          break;
+         }
+         Serial.print(this->opB);
+         Serial.println(F("?"));
+  }
+
+  public:
+    virtual bool handlePause(){
+      this->lastAction = millis();
+      if(this->upperBound <= 0){
+        this->upperBound = this->result;
+        this->result = 0;
+        this->nextQuestion();
+        return true;
+      }
+      uint8_t tmpVal = 0;
+
+      switch(this->opr){
+        case 1:
+        { tmpVal = this->opA + this->opB; }
+        break;
+        case 2:
+        { tmpVal = this->opA - this->opB; }
+        break;
+        case 3:
+        { tmpVal = this->opA * this->opB; }
+        break;
+        case 4:
+        { tmpVal = this->opA / this->opB; }
+        break;
+      }
+
+      if(tmpVal == this->result){
+        Serial.print(F("Richtig: "));
+        Serial.print(tmpVal);
+        Serial.print(F(" == "));
+        Serial.println(this->result);
+
+        mp3.playMp3FolderTrack(420); // richtig
+         waitForTrackToFinish();
+         this->nextQuestion();
+      }
+      else{
+        Serial.print(F("Falsch: "));
+        Serial.print(tmpVal);
+        Serial.print(F(" != "));
+        Serial.println(this->result);
+
+        mp3.playMp3FolderTrack(421); // falsch
+         waitForTrackToFinish();
+         this->nextQuestion(true); // repeat question
+      }
+      return true;
+    }
+    virtual bool handleShortCut(uint8_t shortcut){
+      this->lastAction = millis();
+      switch (shortcut)
+      {
+      case 1: // up
+        if(result + 10 >= 255){
+          result = 255;
+        }
+        else{
+          result += 10;
+        }
+        break;
+
+        case 2: // down
+          if(result - 10 < 1){
+            result = 1;
+          }
+          else{
+            result -= 10;
+          }
+        break;
+        case 0: // pause
+        {
+          mp3.playMp3FolderTrack(802); // cancelled
+          waitForTrackToFinish();
+          activeModifier = NULL;
+          delete this;
+        }
+        break;
+      }
+      this->playResult();
+      return true;
+    }
+
+    virtual bool handleNextButton(){
+      if(result +1 > 255){
+        result = 255;
+      }
+      else{
+        result++;
+      }
+      this->playResult();
+      return true;
+    }
+    virtual bool handlePreviousButton() {
+      if(result -1 < 1){
+        result = 1;
+      }
+      else{
+        result--;
+      }
+      this->playResult();
+      return true;
+    }
+    virtual bool handleVolumeUp()   {
+      return this->handleNextButton();
+    }
+    virtual bool handleVolumeDown() {
+      return this->handlePreviousButton();
+    }
+    virtual bool handleRFID(nfcTagObject *newCard) {
+      
+      return true;
+    }
+    virtual void loop(){
+      if(this->upperBound > 0){
+        if( millis() - this->lastAction >= 60000){ // check all 60s
+          mp3.playMp3FolderTrack(418);
+          waitForTrackToFinish();
+          this->nextQuestion(true);
+
+          this->lastAction = millis();
+        }
+      }
+      return true;
+    }
+    LearnToCalculate(uint8_t mode = 1) {
+      Serial.println(F("=== LearnToCalculate ==="));
+      this->mode = mode;
+
+      if(this->mode == 5){
+        this->opr = random(1,5);
+      }
+      else{
+        this->opr = this->mode;
+      }
+
+      if(isPlaying()){
+        myCard.nfcFolderSettings.folder = 0;
+        myCard.nfcFolderSettings.mode = 0;
+        mp3.pause();
+        mp3.stop();
+      }
+
+      mp3.playMp3FolderTrack(410); // intro 
+      waitForTrackToFinish();
+      mp3.playMp3FolderTrack(429); // choose maximum
+      waitForTrackToFinish();
+      this->lastAction = millis();
+    }
+
+    uint8_t getActive() {
+      return 7;
+    }
+};
+
 
 // An modifier can also do somethings in addition to the modified action
 // by returning false (not handled) at the end
@@ -1089,6 +1338,11 @@ void playFolder() {
 }
 
 void playShortCut(uint8_t shortCut) {
+  if(activeModifier != NULL){
+    if(activeModifier->handleShortCut(shortCut) == true)
+      return;
+  }
+
   Serial.println(F("=== playShortCut()"));
   Serial.println(shortCut);
   if (mySettings.shortCuts[shortCut].folder != 0) {
@@ -1143,7 +1397,7 @@ void loop() {
     } else if (pauseButton.pressedFor(LONG_PRESS) &&
                ignorePauseButton == false) {
       if (activeModifier != NULL)
-        if (activeModifier->handlePause() == true)
+        if (activeModifier->handleShortCut(0) == true)
           return;
       if (isPlaying()) {
         uint8_t advertTrack;
@@ -1355,7 +1609,7 @@ void adminMenu(bool fromCard = false) {
     tempCard.nfcFolderSettings.folder = 0;
     tempCard.nfcFolderSettings.special = 0;
     tempCard.nfcFolderSettings.special2 = 0;
-    tempCard.nfcFolderSettings.mode = voiceMenu(6, 970, 970, false, false, 0, true);
+    tempCard.nfcFolderSettings.mode = voiceMenu(7, 970, 970, false, false, 0, true);
 
     if (tempCard.nfcFolderSettings.mode != 0) {
       if (tempCard.nfcFolderSettings.mode == 1) {
@@ -1365,6 +1619,11 @@ void adminMenu(bool fromCard = false) {
           case 3: tempCard.nfcFolderSettings.special = 30; break;
           case 4: tempCard.nfcFolderSettings.special = 60; break;
         }
+      }
+      else if(tempCard.nfcFolderSettings.mode == 7) { // calculation
+        tempCard.nfcFolderSettings.special = voiceMenu(5, 423, 423);
+        Serial.print("Setting: ");
+        Serial.println(tempCard.nfcFolderSettings.special);
       }
       mp3.playMp3FolderTrack(800);
       do {
@@ -1896,6 +2155,7 @@ bool readCard(nfcTagObject * nfcTag) {
         case 4: activeModifier = new ToddlerMode(); break;
         case 5: activeModifier = new KindergardenMode(); break;
         case 6: activeModifier = new RepeatSingleModifier(); break;
+        case 7: activeModifier = new LearnToCalculate(tempCard.nfcFolderSettings.special); break;
 
       }
       delay(2000);
