@@ -32,6 +32,7 @@ struct adminSettings {
     uint8_t adminMenuPin[4];
     bool light;
     uint8_t lightBrightness = 30;
+    uint8_t persistedModifier = 0;
 };
 
 #endif
