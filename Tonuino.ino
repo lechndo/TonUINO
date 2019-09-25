@@ -45,8 +45,8 @@ const uint8_t StatusLedCount = 6;                   // number of ws281x status l
 
 bool isPowerOff = false;
 
-const cRGB defaultStatusColor{ 220, 54, 54, 0 }; // default color red
-//const cRGB defaultStatusColor{ 0, 255, 0, 0 }; // default color green
+// const cRGB defaultStatusColor{ 220, 54, 54, 0 }; // default color red
+const cRGB defaultStatusColor{ 0, 255, 0, 0 }; // default color green
 //const cRGB defaultStatusColor{ 0, 80, 255, 0 }; // defaul color blue
 const cRGB redStatusColor{ 255, 0, 0, 0 };
 const cRGB blueStatusColor{ 0, 0, 255, 0 };
@@ -103,7 +103,7 @@ WS2812 statusLed(StatusLedCount);
 void statusLedUpdate(uint8_t statusLedAction, cRGB ledColor = defaultStatusColor, uint16_t statusLedUpdateInterval = 0);
 void statusLedUpdateHal(cRGB ledColor, int16_t brightness, int8_t ledIndex = -1, int8_t led2Index = -1);
 
-void waitForTrackToFinish(cRGB ledColor = defaultStatusColor, uint16_t statusLedUpdateInterval = 0, uint8_t style = BLINK);
+void waitForTrackToFinish(cRGB ledColor = defaultStatusColor, uint16_t statusLedUpdateInterval = 100, uint8_t style = BLINK);
 
 void ClearCardData(){
   myCard.cookie = 0;
@@ -125,7 +125,7 @@ public:
 		Serial.println();
 		Serial.print("Com Error ");
 		Serial.println(errorCode);
-		statusLedUpdate(BURST4, pinkStatusColor, 0);
+		//statusLedUpdate(BURST4, pinkStatusColor, 0);
 	}
 
 	static void OnPlayFinished(uint16_t track) {
@@ -365,7 +365,7 @@ class LearnToCalculate: public Modifier {
     }
     
     mp3.playMp3FolderTrack(this->result);
-    waitForTrackToFinish();
+    waitForTrackToFinish(blackStatusColor, 200, SOLID);
   }
 
   void nextQuestion(bool repeat = false){
@@ -413,13 +413,13 @@ class LearnToCalculate: public Modifier {
           }
       }
         mp3.playMp3FolderTrack(MP3_CALC_HOW_MUCH_IS); // question "how much is"
-         waitForTrackToFinish();
+         waitForTrackToFinish(blueStatusColor, 200, SOLID);
         mp3.playMp3FolderTrack(this->opA); // 1..254
-         waitForTrackToFinish();
+         waitForTrackToFinish(blueStatusColor, 200, SOLID);
         mp3.playMp3FolderTrack(MP3_CALC_HOW_MUCH_IS + this->opr); // 402, 403, 404, 405
-         waitForTrackToFinish();
+         waitForTrackToFinish(blueStatusColor, 200, SOLID);
         mp3.playMp3FolderTrack(this->opB); // 1..254
-         waitForTrackToFinish();
+         waitForTrackToFinish(blueStatusColor, 200, SOLID);
   }
 
   public:
@@ -451,13 +451,13 @@ class LearnToCalculate: public Modifier {
       if(tmpVal == this->result){
         mp3.playMp3FolderTrack(MP3_CALC_CORRECT); // richtig
 		statusLedUpdate(BURST4, greenStatusColor, 0);
-         waitForTrackToFinish();
+         waitForTrackToFinish(greenStatusColor, 200, SOLID);
          this->nextQuestion();
       }
       else{
         mp3.playMp3FolderTrack(MP3_CALC_WRONG); // falsch
 		statusLedUpdate(BURST4, redStatusColor, 0);
-         waitForTrackToFinish();
+         waitForTrackToFinish(redStatusColor, 200, SOLID);
          this->nextQuestion(true); // repeat question
       }
       return true;
@@ -486,7 +486,7 @@ class LearnToCalculate: public Modifier {
         case 0: // pause
         {
           mp3.playMp3FolderTrack(802); // cancelled
-          waitForTrackToFinish();
+          waitForTrackToFinish(blackStatusColor, 100, SOLID);
           mp3.pause();
           activeModifier = NULL;
           delete this;
@@ -531,8 +531,8 @@ class LearnToCalculate: public Modifier {
       if(this->upperBound > 0){
         if( millis() - this->lastAction >= 60000){ // check all 60s
           mp3.playMp3FolderTrack(MP3_CALC_CALC_WITH_ME);
-		  statusLedUpdate(BURST4, pinkStatusColor, 0);
-          waitForTrackToFinish();
+		  statusLedUpdate(BURST4, yellowStatusColor, 0);
+          waitForTrackToFinish(yellowStatusColor, 200, SOLID);
           this->nextQuestion(true);
 
           this->lastAction = millis();
@@ -557,10 +557,10 @@ class LearnToCalculate: public Modifier {
       mp3.pause();
 
       mp3.playMp3FolderTrack(MP3_CALC_INTRO); // intro 
-      waitForTrackToFinish();
+      waitForTrackToFinish(blueStatusColor, 200, SOLID);
 
       mp3.playMp3FolderTrack(MP3_CALC_MAX_NUM); // choose maximum
-      waitForTrackToFinish();
+      waitForTrackToFinish(blueStatusColor, 200, SOLID);
       this->lastAction = millis();
     }
 
@@ -621,9 +621,28 @@ public:
 		this->lastVolCheck = millis();
 		if (isPlaying()) {
 			mp3.playAdvertisement(ADV_SLEEP);
+			mp3.playAdvertisement(minutes);
+			if(minutes == 1)
+			{
+				mp3.playAdvertisement(ADV_MINUTE);
+			}
+			else{
+				mp3.playAdvertisement(ADV_MINUTES);
+			}
 		}
 		else {
 			mp3.playMp3FolderTrack(MP3_MODIFIER_SLEEP);
+			waitForTrackToFinish(blackStatusColor, 200, SOLID);
+			mp3.playMp3FolderTrack(minutes);
+			waitForTrackToFinish(blackStatusColor, 200, SOLID);
+			if(minutes == 1)
+			{
+				mp3.playMp3FolderTrack(MP3_MINUTE);
+			}
+			else{
+				mp3.playMp3FolderTrack(MP3_MINUTES);
+			}
+			waitForTrackToFinish(blackStatusColor, 200, SOLID);
 			delay(100);
 			mp3.pause();
 		}
@@ -805,7 +824,6 @@ public:
 	}
 
 	virtual bool handleRFID(nfcTagObject *newCard) { // lot of work to do!
-		Serial.println(F("== KindergardenMode::handleRFID() -> queued!"));
 		this->nextCard = *newCard;
 		this->cardQueued = true;
 		if (!isPlaying()) {
@@ -1085,7 +1103,7 @@ void setStandbyTimer() {
 }
 
 void disableStandbyTimer() {
-	Serial.println(F("=== disablestandby()"));
+	Serial.println(F("=== disableStandbyTimer()"));
 	sleepAtMillis = 0;
 }
 
@@ -1120,7 +1138,7 @@ bool isPlaying() {
 	return !digitalRead(busyPin);
 }
 
-void waitForTrackToFinish(cRGB ledColor = defaultStatusColor, uint16_t statusLedUpdateInterval = 0, uint8_t style = BLINK) {
+void waitForTrackToFinish(cRGB ledColor = defaultStatusColor, uint16_t statusLedUpdateInterval = 100, uint8_t style = BLINK) {
 	long currentTime = millis();
 
 	do {
@@ -1183,6 +1201,7 @@ void setup() {
 	// DFPlayer Mini initialisieren
     pinMode(shutdownPin, OUTPUT);
 	digitalWrite(shutdownPin, HIGH);
+	delay(50);
 	mp3.begin();
 	toggleLoadingLed();
 
@@ -2306,11 +2325,10 @@ bool readCard(nfcTagObject *nfcTag) {
 					Serial.println(F("modifier removed"));
 					if (isPlaying()) {
 						mp3.playAdvertisement(ADV_MODIFIER_REMOVED_SOUND);
-						Serial.println("Play ad");
 					}
 					else {
 						mp3.playMp3FolderTrack(MP3_MODIFIER_REMOVED_SOUND);
-						Serial.println("Play mp3");
+						waitForTrackToFinish(blackStatusColor, 200, SOLID);
 						delay(100);
 						mp3.pause();
 					}
