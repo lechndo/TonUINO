@@ -394,6 +394,11 @@ struct playbackStruct {
   nfcTagStruct currentTag;
 };
 
+// used for pc programming mode
+playbackStruct newCard;
+uint8_t readStatus = 0;
+uint8_t rnum = 0;
+
 // this struct stores preferences
 struct preferenceStruct {
   uint32_t cookie = 0;
@@ -424,7 +429,8 @@ void switchButtonConfiguration(uint8_t buttonMode);
 void waitPlaybackToFinish(uint8_t red, uint8_t green, uint8_t blue, uint16_t statusLedUpdateInterval);
 void printModeFolderTrack(bool cr);
 void playNextTrack(uint16_t globalTrack, bool directionForward, bool triggeredManually);
-uint8_t readNfcTagData();
+//uint8_t readNfcTagData();
+uint8_t readNfcTagData(playbackStruct * pbs = nullptr);
 uint8_t writeNfcTagData(uint8_t nfcTagWriteBuffer[], uint8_t nfcTagWriteBufferSize);
 void printNfcTagData(uint8_t dataBuffer[], uint8_t dataBufferSize, bool cr);
 void printNfcTagType(MFRC522::PICC_Type nfcTagType);
@@ -432,6 +438,7 @@ void shutdownTimer(uint8_t timerAction);
 void preferences(uint8_t preferenceAction);
 uint8_t prompt(uint8_t promptOptions, uint16_t promptHeading, uint16_t promptOffset, uint8_t promptCurrent, uint8_t promptFolder, bool promptPreview, bool promptChangeVolume);
 void parentsMenu();
+void dump_byte_array(byte * buffer, byte bufferSize, bool noSpace = false);
 #if defined PINCODE
 bool enterPinCode();
 #endif
@@ -439,6 +446,180 @@ bool enterPinCode();
 void statusLedUpdate(uint8_t statusLedAction, uint8_t red, uint8_t green, uint8_t blue, uint16_t statusLedUpdateInterval);
 void statusLedUpdateHal(uint8_t red, uint8_t green, uint8_t blue, int16_t brightness);
 #endif
+
+// begin of pc programming mode functions
+
+// clear a rfid card (used for programming mode)
+void ClearCardData(){
+  playback.currentTag.cookie = 0;
+  playback.currentTag.version = 0;
+  playback.currentTag.folder = 0;
+  playback.currentTag.mode = 0;
+  playback.currentTag.multiPurposeData1 = 0;
+  playback.currentTag.multiPurposeData2 = 0;
+}
+
+uint8_t GetByte(char c){
+  return (c > '9') ? (c&0x0F) + 9 : (c&0x0F);
+}
+
+bool ReadFromSerial(){
+  if(Serial.available()){
+    char c = Serial.read();
+    if (c != '#' && (c < '0' || c > 'F')) return false;
+
+    switch(readStatus){
+      case 0:{
+        // wait for start char (#)
+        if(c=='#'){
+          rnum = 0;
+          readStatus =1;
+          ClearCardData();
+        }
+      }
+      return false;
+
+      case 1: {
+        // read magic (cookie), 8 Hex chars
+        if(c == '#'){
+          rnum = 0;
+          ClearCardData();
+          return false;
+        }
+
+        playback.currentTag.cookie = playback.currentTag.cookie * 16 + GetByte(c);
+        rnum++;
+        if(rnum > 7){
+          rnum = 0;
+          readStatus = 2;
+        }
+      }
+      return false;
+
+      case 2:{
+        // read version, 2 chars
+        if(c == '#'){
+          rnum = 0;
+          ClearCardData();
+          readStatus = 1;
+          return false;
+        }
+        playback.currentTag.version = playback.currentTag.version * 16 + GetByte(c);
+        rnum++;
+        if(rnum > 1){
+          rnum = 0;
+          readStatus = 3;
+        }
+      }
+      return false;
+
+      case 3: {
+        // read folder, 2 chars
+        if(c == '#'){
+          rnum = 0;
+          ClearCardData();
+          readStatus = 1;
+          return false;
+        }
+
+        playback.currentTag.folder = playback.currentTag.folder * 16 + GetByte(c);
+        rnum++;
+        if(rnum > 1){
+          rnum = 0;
+          readStatus = 4;
+        }
+      }
+      return false;
+
+      case 4: {
+        // read mode, 2 chars
+        if(c == '#'){
+          rnum = 0;
+          ClearCardData();
+          readStatus = 1;
+          return false;
+        }
+        playback.currentTag.mode = playback.currentTag.mode * 16 + GetByte(c);
+        rnum++;
+        if(rnum > 1){
+          rnum = 0;
+          readStatus = 5;
+        }
+      }
+      return false;
+
+      case 5:{
+        // read multipurpose 1, 3 chars
+        if(c == '#'){
+          rnum = 0;
+          ClearCardData();
+          readStatus = 1;
+          return false;
+        }
+
+        playback.currentTag.multiPurposeData1 = playback.currentTag.multiPurposeData1 * 16 + GetByte(c);
+        rnum++;
+        if(rnum > 1){
+          rnum = 0;
+          readStatus = 6;
+        }
+      }
+      return false;
+
+      case 6: {
+        // read multipurpose 2, 3 chars
+        if(c == '#'){
+          rnum = 0;
+          ClearCardData();
+          readStatus = 1;
+          return false;
+        }
+
+        playback.currentTag.multiPurposeData2 = playback.currentTag.multiPurposeData2 * 16 + GetByte(c);
+        rnum++;
+        if(rnum > 1){
+          rnum = 0;
+          readStatus = 0;
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+void WriteCardDataToSerial(){
+  // send data from newCard to PC, prefixed by #
+  byte buffer[9] = {0x13, 0x37, 0xb3, 0x47, // 0x1337 0xb347 magix cookie to identify our tags
+                    0x02, // version 1
+                    newCard.currentTag.folder, // folder
+                    newCard.currentTag.mode, // playback mode
+                    newCard.currentTag.multiPurposeData1, // from track
+                    newCard.currentTag.multiPurposeData2 // to track
+                    };
+
+  byte size = sizeof(buffer);
+  Serial.print('#');
+  dump_byte_array(buffer, size, true);
+  Serial.print('\n');
+}
+
+void dump_byte_array(byte * buffer, byte bufferSize, bool noSpace = false) {
+  for (byte i = 0; i < bufferSize; i++) {
+    		if(noSpace){
+			if(buffer[i]< 0x10){
+				Serial.print("0");
+			}
+		}
+		else{
+			Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+		}
+
+		Serial.print(buffer[i], HEX);
+	}
+}
+
+// end of pc programming mode functions
 
 // used by DFPlayer Mini library during callbacks
 class Mp3Notify {
@@ -1379,7 +1560,12 @@ void playNextTrack(uint16_t globalTrack, bool directionForward, bool triggeredMa
 }
 
 // reads data from nfc tag
-uint8_t readNfcTagData() {
+uint8_t readNfcTagData(playbackStruct * pbs /* = nullptr*/) {
+
+  if(pbs == nullptr){
+    pbs = &playback;
+  }
+
   uint8_t nfcTagReadBuffer[16] = {};
   uint8_t piccReadBuffer[18] = {};
   uint8_t piccReadBufferSize = sizeof(piccReadBuffer);
@@ -1457,23 +1643,23 @@ uint8_t readNfcTagData() {
 
     // if cookie is not blank, update ncfTag object with data read from nfc tag
     if (tempMagicCookie != 0) {
-      playback.currentTag.cookie = tempMagicCookie;
-      playback.currentTag.version = nfcTagReadBuffer[4];
-      playback.currentTag.folder = nfcTagReadBuffer[5];
-      playback.currentTag.mode = nfcTagReadBuffer[6];
-      playback.currentTag.multiPurposeData1 = nfcTagReadBuffer[7];
-      playback.currentTag.multiPurposeData2 = nfcTagReadBuffer[8];
+      pbs->currentTag.cookie = tempMagicCookie;
+      pbs->currentTag.version = nfcTagReadBuffer[4];
+      pbs->currentTag.folder = nfcTagReadBuffer[5];
+      pbs->currentTag.mode = nfcTagReadBuffer[6];
+      pbs->currentTag.multiPurposeData1 = nfcTagReadBuffer[7];
+      pbs->currentTag.multiPurposeData2 = nfcTagReadBuffer[8];
       mfrc522.PICC_HaltA();
       mfrc522.PCD_StopCrypto1();
     }
     // if magic cookie is blank, clear ncfTag object
     else {
-      playback.currentTag.cookie = 0;
-      playback.currentTag.version = 0;
-      playback.currentTag.folder = 0;
-      playback.currentTag.mode = 0;
-      playback.currentTag.multiPurposeData1 = 0;
-      playback.currentTag.multiPurposeData2 = 0;
+      pbs->currentTag.cookie = 0;
+      pbs->currentTag.version = 0;
+      pbs->currentTag.folder = 0;
+      pbs->currentTag.mode = 0;
+      pbs->currentTag.multiPurposeData1 = 0;
+      pbs->currentTag.multiPurposeData2 = 0;
     }
     return 1;
   }
@@ -2002,6 +2188,84 @@ void parentsMenu() {
     else if (selectedOption == 10) {
       Serial.println(F("manual shut"));
       shutdownTimer(SHUTDOWN);
+    }
+    // pc programming mode
+    else if (selectedOption == 11) {
+      mp3.playMp3FolderTrack(325); // programming mode intro
+      Serial.println(F("Programmiermodus aktiviert"));
+      bool cancel = false;
+
+      do {
+        checkForInput();
+        if(inputEvent == B0P || inputEvent == B1P || inputEvent == B2P){
+          cancel = true;
+          Serial.println(F("Abgebrochen"));
+          mp3.playMp3FolderTrack(327); // programming mode finished
+          mfrc522.PICC_HaltA();
+          mfrc522.PCD_StopCrypto1();
+          break;
+        }
+
+        Serial.println(F(" Karte auflegen"));
+        mp3.playMp3FolderTrack(800); // waiting for card
+
+        // wait for card
+        do {
+          checkForInput();
+          if(inputEvent == B0P || inputEvent == B1P || inputEvent == B2P){
+            cancel = true;
+            Serial.println(F("Abgebrochen!"));
+            mp3.playMp3FolderTrack(802); // reset aborted
+            mfrc522.PICC_HaltA();
+            mfrc522.PCD_StopCrypto1();
+            return;
+          }
+        } while (!mfrc522.PICC_IsNewCardPresent());
+
+        // RFID card detected
+        if (mfrc522.PICC_ReadCardSerial()) {
+          Serial.println("Lese Karte...");
+          if(readNfcTagData(&newCard) == true){
+            WriteCardDataToSerial();
+          }
+
+          while(ReadFromSerial() == false){
+            checkForInput();
+            if(inputEvent == B0P || inputEvent == B1P || inputEvent == B2P){
+              cancel = true;
+              Serial.println(F("Abgebrochen!"));
+              mp3.playMp3FolderTrack(802); // reset aborted
+              mfrc522.PICC_HaltA();
+              mfrc522.PCD_StopCrypto1();
+              return;
+            }
+            delay(10);
+          }
+          Serial.println(F("schreibe Karte..."));
+          
+          uint8_t bytesToWrite[16] = {magicCookieHex[0],                 // 1st byte of magic cookie (by default 0x13)
+                                    magicCookieHex[1],                 // 2nd byte of magic cookie (by default 0x37)
+                                    magicCookieHex[2],                 // 3rd byte of magic cookie (by default 0xb3)
+                                    magicCookieHex[3],                 // 4th byte of magic cookie (by default 0x47)
+                                    0x01,                              // version 1
+                                    playback.currentTag.folder,                     // the folder selected by the user
+                                    playback.currentTag.mode,                       // the playback mode selected by the user
+                                    playback.currentTag.multiPurposeData1,          // multi purpose data (ie. single track for mode 4 and start of vfolder)
+                                    playback.currentTag.multiPurposeData2,          // multi purpose data (ie. end of vfolder, depending on mode)
+                                    0x00, 0x00, 0x00,                  // reserved for future use
+                                    0x00, 0x00, 0x00, 0x00             // reserved for future use
+                                   };
+
+          writeNfcTagData(bytesToWrite, sizeof(bytesToWrite));
+          delay(100);
+
+          if(readNfcTagData(&newCard) == true){
+            WriteCardDataToSerial();
+          }
+          mfrc522.PICC_HaltA();
+          mfrc522.PCD_StopCrypto1();				
+        }
+      }while(!cancel);
     }
     mp3.loop();
   }
