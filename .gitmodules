@@ -1,0 +1,6 @@
+[submodule "pcb/libs/kicad.lib"]
+	path = pcb/libs/kicad.lib
+	url = https://github.com/RoboUlbricht/kicad.lib.git
+[submodule "pcb/libs/KiCad_Arduino_Nano_DFPlayer_footprints"]
+	path = pcb/libs/KiCad_Arduino_Nano_DFPlayer_footprints
+	url = https://github.com/joeylevy/KiCad_Arduino_Nano_DFPlayer_footprints.git
