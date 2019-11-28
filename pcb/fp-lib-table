@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name Arduino_Nano)(type KiCad)(uri ${KIPRJMOD}/libs/KiCad_Arduino_Nano_DFPlayer_footprints/Arduino_Nano.pretty)(options "")(descr ""))
+)

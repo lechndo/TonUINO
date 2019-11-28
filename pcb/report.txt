@@ -1,0 +1,101 @@
+Info: Processing component "A1:/5DBEB121:Module:Arduino_Nano".
+Info: Change symbol path "A1:" to "/5DBEB121".
+Info: Change symbol path "U1:" to "/5DBEB5A8".
+Info: Processing component "U1:/5DBEB5A8:Arduino_Nano:DFPlayer".
+Connect A1 pin 17 to Net-(A1-Pad17).
+Connect U1 pin 11 to Net-(U1-Pad11).
+Add net Net-(U1-Pad11).
+Connect U1 pin 10 to Net-(U1-Pad10).
+Add net Net-(U1-Pad10).
+Connect U1 pin 9 to Net-(U1-Pad9).
+Add net Net-(U1-Pad9).
+Change U1 value from DFPlayer to DFPLAYER_MINI.
+Change REF** reference to U1.
+Add U1 (footprint "Arduino_Nano:DFPlayer").
+Connect A1 pin 1 to Net-(A1-Pad1).
+Add net Net-(A1-Pad1).
+Add net Net-(U1-Pad12).
+Add net Net-(A1-Pad17).
+Connect A1 pin 2 to Net-(A1-Pad2).
+Add net Net-(A1-Pad2).
+Connect A1 pin 18 to Net-(A1-Pad18).
+Add net Net-(A1-Pad18).
+Connect A1 pin 3 to Net-(A1-Pad3).
+Add net Net-(A1-Pad3).
+Connect A1 pin 19 to Net-(A1-Pad19).
+Add net Net-(A1-Pad19).
+Connect A1 pin 4 to Net-(A1-Pad4).
+Add net Net-(U1-Pad7).
+Connect U1 pin 1 to Net-(A1-Pad27).
+Connect U1 pin 2 to Net-(U1-Pad2).
+Add net Net-(U1-Pad2).
+Connect U1 pin 3 to Net-(U1-Pad3).
+Add net Net-(U1-Pad3).
+Connect U1 pin 4 to Net-(U1-Pad4).
+Add net Net-(U1-Pad4).
+Connect U1 pin 5 to Net-(U1-Pad5).
+Add net Net-(U1-Pad5).
+Connect U1 pin 6 to Net-(U1-Pad6).
+Add net Net-(U1-Pad6).
+Connect U1 pin 7 to Net-(U1-Pad7).
+Connect A1 pin 20 to Net-(A1-Pad20).
+Connect U1 pin 8 to Net-(U1-Pad8).
+Add net Net-(U1-Pad8).
+Connect U1 pin 16 to Net-(U1-Pad16).
+Add net Net-(U1-Pad16).
+Connect U1 pin 15 to Net-(U1-Pad15).
+Add net Net-(U1-Pad15).
+Connect U1 pin 14 to Net-(U1-Pad14).
+Add net Net-(U1-Pad14).
+Connect U1 pin 13 to Net-(U1-Pad13).
+Add net Net-(U1-Pad13).
+Connect U1 pin 12 to Net-(U1-Pad12).
+Add net Net-(A1-Pad29).
+Add net Net-(A1-Pad26).
+Connect A1 pin 11 to Net-(A1-Pad11).
+Add net Net-(A1-Pad11).
+Connect A1 pin 27 to Net-(A1-Pad27).
+Add net Net-(A1-Pad27).
+Connect A1 pin 12 to Net-(A1-Pad12).
+Add net Net-(A1-Pad12).
+Connect A1 pin 28 to Net-(A1-Pad28).
+Add net Net-(A1-Pad28).
+Connect A1 pin 13 to Net-(A1-Pad13).
+Add net Net-(A1-Pad13).
+Connect A1 pin 29 to Net-(A1-Pad29).
+Connect A1 pin 26 to Net-(A1-Pad26).
+Connect A1 pin 14 to Net-(A1-Pad14).
+Add net Net-(A1-Pad14).
+Connect A1 pin 30 to Net-(A1-Pad30).
+Add net Net-(A1-Pad30).
+Connect A1 pin 15 to Net-(A1-Pad15).
+Add net Net-(A1-Pad15).
+Connect A1 pin 16 to Net-(A1-Pad16).
+Add net Net-(A1-Pad16).
+Change A1 value from Arduino_Nano to Arduino_Nano_v2.x.
+Change REF** reference to A1.
+Add A1 (footprint "Module:Arduino_Nano").
+Connect A1 pin 23 to Net-(A1-Pad23).
+Add net Net-(A1-Pad20).
+Connect A1 pin 5 to Net-(A1-Pad5).
+Add net Net-(A1-Pad5).
+Connect A1 pin 21 to Net-(A1-Pad21).
+Add net Net-(A1-Pad21).
+Connect A1 pin 6 to Net-(A1-Pad6).
+Add net Net-(A1-Pad6).
+Connect A1 pin 22 to Net-(A1-Pad22).
+Add net Net-(A1-Pad22).
+Connect A1 pin 7 to Net-(A1-Pad7).
+Add net Net-(A1-Pad7).
+Add net Net-(A1-Pad4).
+Add net Net-(A1-Pad23).
+Connect A1 pin 8 to Net-(A1-Pad8).
+Add net Net-(A1-Pad8).
+Connect A1 pin 24 to Net-(A1-Pad24).
+Add net Net-(A1-Pad24).
+Connect A1 pin 9 to Net-(A1-Pad9).
+Add net Net-(A1-Pad9).
+Connect A1 pin 25 to Net-(A1-Pad25).
+Add net Net-(A1-Pad25).
+Connect A1 pin 10 to Net-(A1-Pad10).
+Add net Net-(A1-Pad10).

@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name rur)(type Legacy)(uri ${KIPRJMOD}/libs/kicad.lib/rur.lib)(options "")(descr ""))
+  (lib (name Tonuino-rescue)(type Legacy)(uri ${KIPRJMOD}/Tonuino-rescue.lib)(options "")(descr ""))
+)
