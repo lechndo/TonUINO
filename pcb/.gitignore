@@ -1,0 +1,18 @@
+# For PCBs designed using KiCAD: http://www.kicad-pcb.org/
+*~
+*.000
+*.bak
+*.bck
+*.kicad_pcb-bak
+*.sch-bak
+*.swp
+*.net
+.dsn
+*.log
+*.raw
+*-cache.lib
+*-rescue.lib
+_saved_*.sch
+fp-info-cache
+file[A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9].sch
+
