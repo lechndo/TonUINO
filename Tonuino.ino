@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <DFMiniMp3.h>
 #include <EEPROM.h>
 #include <JC_Button.h>
@@ -59,6 +60,25 @@ folderSettings *myFolder;
 unsigned long sleepAtMillis = 0;
 static uint16_t _lastTrackFinished;
 
+// Function forward declarations
+void powerOff();
+
+bool askCode(uint8_t *code);
+bool ReadFromSerial();
+
+void setStandbyTimer();
+void disableStandbyTimer();
+void checkStandbyAtMillis();
+
+void wakeUpCard();
+void setupCard();
+void resetCard();
+bool readCard(nfcTagObject *nfcTag);
+void WriteCardDataToSerial();
+
+void playFolder();
+bool setupFolder(folderSettings *theFolder);
+void playShortCut(uint8_t shortCut);
 static void nextTrack(uint16_t track);
 
 uint8_t voiceMenu(int numberOfOptions, int startMessage, int messageOffset, bool preview = false, int previewFromFolder = 0, int defaultValue = 0, bool exitWithLongPress = false);
