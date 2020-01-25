@@ -22,8 +22,6 @@
 // uncomment the below line to enable remix of queue at end
 #define RECREATE_QUEUE_ON_END
 
-#include <WS2812.h>
-
 static const uint32_t cardCookie = 322417479;
 bool configBrightness = false;
 
@@ -40,29 +38,7 @@ bool configBrightness = false;
 #define buttonReset A4
 
 
-const uint8_t StatusLedPin = 6;                     // pin used for status led(s)
-const uint8_t StatusLedCount = 6;                   // number of ws281x status led(s)
-
 bool isPowerOff = false;
-
-// const cRGB defaultStatusColor{ 220, 54, 54, 0 }; // default color red
-const cRGB defaultStatusColor{ 0, 255, 0, 0 }; // default color green
-//const cRGB defaultStatusColor{ 0, 80, 255, 0 }; // defaul color blue
-const cRGB redStatusColor{ 255, 0, 0, 0 };
-const cRGB blueStatusColor{ 0, 0, 255, 0 };
-const cRGB greenStatusColor{ 0, 255, 0, 0 };
-const cRGB pinkStatusColor{ 255, 0, 255, 0 };
-const cRGB aquaStatusColor{ 0, 255, 255, 0 };
-const cRGB yellowStatusColor{ 255, 255, 0, 0 };
-const cRGB orangeStatusColor{ 255, 140, 0, 0 };
-const cRGB lilaStatusColor{ 128, 0, 255, 0 };
-const cRGB blackStatusColor{ 0,0,0,0 };
-const cRGB whiteStatusColor{ 0,0,0,255 };
-
-#define MaxPlayColors 8
-const cRGB playColors[MaxPlayColors] = { defaultStatusColor, redStatusColor, greenStatusColor,
-aquaStatusColor, yellowStatusColor, lilaStatusColor,orangeStatusColor,blueStatusColor };
-uint8_t currentColorIndex = 0;
 
 
 #define LONG_PRESS 1000
@@ -96,14 +72,7 @@ bool knownCard = false;
 uint8_t readStatus = 0;
 uint8_t rnum = 0;
 
-// status led actions
-enum { SOLID, PULSE, BLINK, BURST4, BURST8, TOGGLE, TOGGLE2 };
-int8_t currentLedIndex = 0;
-WS2812 statusLed(StatusLedCount);
-void statusLedUpdate(uint8_t statusLedAction, cRGB ledColor = defaultStatusColor, uint16_t statusLedUpdateInterval = 0);
-void statusLedUpdateHal(cRGB ledColor, int16_t brightness, int8_t ledIndex = -1, int8_t led2Index = -1);
-
-void waitForTrackToFinish(cRGB ledColor = defaultStatusColor, uint16_t statusLedUpdateInterval = 100, uint8_t style = BLINK);
+void waitForTrackToFinish();
 
 void ClearCardData(){
   myCard.cookie = 0;
@@ -146,17 +115,14 @@ public:
 
 	static void OnUsbOnline(uint16_t code) {
 		Serial.println(F("USB online "));
-		statusLedUpdate(BURST4, whiteStatusColor, 0);
 	}
 
 	static void OnUsbInserted(uint16_t code) {
 		Serial.println(F("USB bereit "));
-		statusLedUpdate(BURST4, whiteStatusColor, 0);
 	}
 
 	static void OnUsbRemoved(uint16_t code) {
 		Serial.println(F("USB entfernt "));
-		statusLedUpdate(BURST4, redStatusColor, 0);
 	}
 };
 
@@ -365,7 +331,7 @@ class LearnToCalculate: public Modifier {
     }
     
     mp3.playMp3FolderTrack(this->result);
-    waitForTrackToFinish(blackStatusColor, 200, SOLID);
+    waitForTrackToFinish();
   }
 
   void nextQuestion(bool repeat = false){
@@ -413,13 +379,13 @@ class LearnToCalculate: public Modifier {
           }
       }
         mp3.playMp3FolderTrack(MP3_CALC_HOW_MUCH_IS); // question "how much is"
-         waitForTrackToFinish(blueStatusColor, 200, SOLID);
+         waitForTrackToFinish();
         mp3.playMp3FolderTrack(this->opA); // 1..254
-         waitForTrackToFinish(blueStatusColor, 200, SOLID);
+         waitForTrackToFinish();
         mp3.playMp3FolderTrack(MP3_CALC_HOW_MUCH_IS + this->opr); // 402, 403, 404, 405
-         waitForTrackToFinish(blueStatusColor, 200, SOLID);
+         waitForTrackToFinish();
         mp3.playMp3FolderTrack(this->opB); // 1..254
-         waitForTrackToFinish(blueStatusColor, 200, SOLID);
+         waitForTrackToFinish();
   }
 
   public:
@@ -450,14 +416,12 @@ class LearnToCalculate: public Modifier {
 
       if(tmpVal == this->result){
         mp3.playMp3FolderTrack(MP3_CALC_CORRECT); // richtig
-		statusLedUpdate(BURST4, greenStatusColor, 0);
-         waitForTrackToFinish(greenStatusColor, 200, SOLID);
+         waitForTrackToFinish();
          this->nextQuestion();
       }
       else{
         mp3.playMp3FolderTrack(MP3_CALC_WRONG); // falsch
-		statusLedUpdate(BURST4, redStatusColor, 0);
-         waitForTrackToFinish(redStatusColor, 200, SOLID);
+         waitForTrackToFinish();
          this->nextQuestion(true); // repeat question
       }
       return true;
@@ -486,7 +450,7 @@ class LearnToCalculate: public Modifier {
         case 0: // pause
         {
           mp3.playMp3FolderTrack(802); // cancelled
-          waitForTrackToFinish(blackStatusColor, 100, SOLID);
+          waitForTrackToFinish();
           mp3.pause();
           activeModifier = NULL;
           delete this;
@@ -531,8 +495,7 @@ class LearnToCalculate: public Modifier {
       if(this->upperBound > 0){
         if( millis() - this->lastAction >= 60000){ // check all 60s
           mp3.playMp3FolderTrack(MP3_CALC_CALC_WITH_ME);
-		  statusLedUpdate(BURST4, yellowStatusColor, 0);
-          waitForTrackToFinish(yellowStatusColor, 200, SOLID);
+          waitForTrackToFinish();
           this->nextQuestion(true);
 
           this->lastAction = millis();
@@ -557,10 +520,10 @@ class LearnToCalculate: public Modifier {
       mp3.pause();
 
       mp3.playMp3FolderTrack(MP3_CALC_INTRO); // intro 
-      waitForTrackToFinish(blueStatusColor, 200, SOLID);
+      waitForTrackToFinish();
 
       mp3.playMp3FolderTrack(MP3_CALC_MAX_NUM); // choose maximum
-      waitForTrackToFinish(blueStatusColor, 200, SOLID);
+      waitForTrackToFinish();
       this->lastAction = millis();
     }
 
@@ -584,8 +547,6 @@ public:
 		if (this->sleepAtMillis > 0 && millis() > this->sleepAtMillis) {
 			Serial.println(F("=== SleepTimer::loop() -> SLEEP!"));
 			mp3.pause();
-
-			statusLedUpdate(SOLID, blackStatusColor, 0);
 			globalBrightness = 0;
 
 			setStandbyTimer();
@@ -632,9 +593,9 @@ public:
 		}
 		else {
 			mp3.playMp3FolderTrack(MP3_MODIFIER_SLEEP);
-			waitForTrackToFinish(blackStatusColor, 200, SOLID);
+			waitForTrackToFinish();
 			mp3.playMp3FolderTrack(minutes);
-			waitForTrackToFinish(blackStatusColor, 200, SOLID);
+			waitForTrackToFinish();
 			if(minutes == 1)
 			{
 				mp3.playMp3FolderTrack(MP3_MINUTE);
@@ -642,7 +603,7 @@ public:
 			else{
 				mp3.playMp3FolderTrack(MP3_MINUTES);
 			}
-			waitForTrackToFinish(blackStatusColor, 200, SOLID);
+			waitForTrackToFinish();
 			delay(100);
 			mp3.pause();
 		}
@@ -703,32 +664,26 @@ public:
 	}
 
 	virtual bool handlePause() {
-		statusLedUpdate(BURST4, redStatusColor, 0);
 		return true;
 	}
 
 	virtual bool handleNextButton() {
-		statusLedUpdate(BURST4, redStatusColor, 0);
 		return true;
 	}
 
 	virtual bool handlePreviousButton() {
-		statusLedUpdate(BURST4, redStatusColor, 0);
 		return true;
 	}
 
 	virtual bool handleVolumeUp() {
-		statusLedUpdate(BURST4, redStatusColor, 0);
 		return true;
 	}
 
 	virtual bool handleVolumeDown() {
-		statusLedUpdate(BURST4, redStatusColor, 0);
 		return true;
 	}
 
 	virtual bool handleRFID(nfcTagObject *newCard) {
-		statusLedUpdate(BURST4, redStatusColor, 0);
 		return true;
 	}
 
@@ -1118,7 +1073,6 @@ void powerOff() {
 	// enter sleep state
 	digitalWrite(shutdownPin, LOW);
 	//delay(500);
-	statusLedUpdate(SOLID, blackStatusColor, 0);
 	isPowerOff = true;
 
 	// http://discourse.voss.earth/t/intenso-s10000-powerbank-automatische-abschaltung-software-only/805
@@ -1138,34 +1092,22 @@ bool isPlaying() {
 	return !digitalRead(busyPin);
 }
 
-void waitForTrackToFinish(cRGB ledColor = defaultStatusColor, uint16_t statusLedUpdateInterval = 100, uint8_t style = BLINK) {
+void waitForTrackToFinish() {
 	long currentTime = millis();
 
 	do {
 		mp3.loop();
-		statusLedUpdate(style, ledColor, statusLedUpdateInterval);
 	} while (!isPlaying() && millis() < currentTime + 1000);
 
 	// @todo check if delay is needed
 	delay(1000);
 	do {
 		mp3.loop();
-		statusLedUpdate(style, ledColor, statusLedUpdateInterval);
 	} while (isPlaying());
-}
-
-void toggleLoadingLed() {
-	statusLedUpdate(TOGGLE, defaultStatusColor, 50);
 }
 
 void setup() {
 	Serial.begin(115200); // Es gibt ein paar Debug Ausgaben über die serielle Schnittstelle
-
-	statusLed.setOutput(StatusLedPin);
-	statusLed.setColorOrderRGB();
-	statusLedUpdate(SOLID, blackStatusColor, 0);
-
-	toggleLoadingLed();
 
 	// Wert für randomSeed() erzeugen durch das mehrfache Sammeln von rauschenden LSBs eines offenen Analogeingangs
 	uint32_t ADCSeed;
@@ -1173,8 +1115,6 @@ void setup() {
 		ADCSeed ^= (analogRead(openAnalogPin) & 0x1) << (i % 32);
 	}
 	randomSeed(ADCSeed); // Zufallsgenerator initialisieren
-
-	toggleLoadingLed();
 
 	// Dieser Hinweis darf nicht entfernt werden
 	Serial.println(F("\n _____         _____ _____ _____ _____"));
@@ -1186,14 +1126,11 @@ void setup() {
 	Serial.println(F("modified version by Peter Pascher"));
 	Serial.println(F("Information and contribution at https://tonuino.de.\n"));
 
-	toggleLoadingLed();
-
 	// Busy Pin
 	pinMode(busyPin, INPUT);
 
 	// load Settings from EEPROM
 	loadSettingsFromFlash();
-	toggleLoadingLed();
 
 	// activate standby timer
 	setStandbyTimer();
@@ -1203,17 +1140,9 @@ void setup() {
 	digitalWrite(shutdownPin, HIGH);
 	delay(50);
 	mp3.begin();
-	toggleLoadingLed();
 
 	// Zwei Sekunden warten bis der DFPlayer Mini initialisiert ist
-	delay(500);
-	toggleLoadingLed();
-	delay(500);
-	toggleLoadingLed();
-	delay(500);
-	toggleLoadingLed();
-	delay(500);
-	toggleLoadingLed();
+	delay(2000);
 
 	volume = mySettings.initVolume;
 	mp3.setVolume(volume);
@@ -1223,7 +1152,6 @@ void setup() {
 	SPI.begin();        // Init SPI bus
 	mfrc522.PCD_Init(); // Init MFRC522
 	mfrc522.PCD_DumpVersionToSerial(); // Show details of PCD - MFRC522 Card Reader
-	toggleLoadingLed();
 	for (byte i = 0; i < 6; i++) {
 		key.keyByte[i] = 0xFF;
 	}
@@ -1233,8 +1161,6 @@ void setup() {
 	pinMode(buttonDown, INPUT_PULLUP);
 	pinMode(buttonReset, INPUT_PULLUP);
 
-	toggleLoadingLed();
-
 	// RESET
 	if (digitalRead(buttonReset) == LOW) 
     {
@@ -1243,16 +1169,14 @@ void setup() {
 			EEPROM.update(i, 0);
 		}
 		loadSettingsFromFlash();
-		statusLedUpdate(BURST4, blueStatusColor, 0);
         mp3.pause();
 		mp3.playMp3FolderTrack(MP3_RESET_OK);
-        waitForTrackToFinish(defaultStatusColor, 100);
+        waitForTrackToFinish();
 	}
-	toggleLoadingLed();
 
 	mp3.pause();
     mp3.playMp3FolderTrack(MP3_INTRO);
-    waitForTrackToFinish(defaultStatusColor, 100);
+    waitForTrackToFinish();
 
 	// Start Shortcut "at Startup" - e.g. Welcome Sound
 	playShortCut(SHORTCUT_STARTUP);
@@ -1297,8 +1221,6 @@ void volumeUpButton() {
 	if (volume < mySettings.maxVolume) {
 		mp3.setVolume(++volume);
 	}
-
-	displayVolumeStatus();
 }
 
 void volumeDownButton() {
@@ -1311,8 +1233,6 @@ void volumeDownButton() {
 	if (volume > mySettings.minVolume) {
 		mp3.setVolume(--volume);
 	}
-
-	displayVolumeStatus();
 }
 
 void nextButton() {
@@ -1323,8 +1243,6 @@ void nextButton() {
 		}
 	}
 	nextTrack(random(65536));
-
-	statusLedUpdate(SOLID, blackStatusColor);
 	delay(500);
 }
 
@@ -1336,7 +1254,6 @@ void previousButton() {
 	}
 
 	previousTrack();
-	statusLedUpdate(SOLID, blackStatusColor);
 	delay(500);
 }
 
@@ -1468,7 +1385,6 @@ void loop() {
 				readButtons();
 			} while (pauseButton.isPressed() || upButton.isPressed() || downButton.isPressed());
 			readButtons();
-			statusLedUpdate(SOLID, blackStatusColor, 0);
 			adminMenu();
 			break;
 		}
@@ -1603,14 +1519,11 @@ void loop() {
 
 			if (activeModifier != NULL && activeModifier->getActive() == MODIFIER_SLEEP_TIMER)
 			{
-				statusLedUpdate(SOLID, whiteStatusColor, 0);
 			}
 			else {
-				statusLedUpdate(TOGGLE2, playColors[(currentColorIndex++)%MaxPlayColors], 500);
 			}
 		}
 		else {
-			statusLedUpdate(PULSE, defaultStatusColor, 80);
 		}
 
 		// Ende der Buttons
@@ -1629,7 +1542,7 @@ void loop() {
 		else if (myCard.cookie != cardCookie) { // Neue Karte konfigurieren
 			knownCard = false;
 			mp3.playMp3FolderTrack(MP3_NEW_TAG);
-			waitForTrackToFinish(blackStatusColor, 0);
+			waitForTrackToFinish();
 			setupCard();
 		}
 	}
@@ -1658,10 +1571,8 @@ void adminMenu(bool fromCard = false) {
 				return;
 			}
 			if (checkTwo(pin, mySettings.adminMenuPin) == false) {
-				statusLedUpdate(BURST4, redStatusColor, 0);
 				return;
 			}
-			statusLedUpdate(BLINK, blueStatusColor, 500);
 		}
 		break;
 
@@ -1672,30 +1583,28 @@ void adminMenu(bool fromCard = false) {
 			uint8_t b = random(1, 10);
 			uint8_t c;
 			mp3.playMp3FolderTrack(MP3_ADMIN_CALC_QUESTION);
-			waitForTrackToFinish(blackStatusColor, 0);
+			waitForTrackToFinish();
 			mp3.playMp3FolderTrack(a);
 
 			if (random(1, 3) == 2) {
 				// a + b
 				c = a + b;
-				waitForTrackToFinish(blackStatusColor, 0);
+				waitForTrackToFinish();
 				mp3.playMp3FolderTrack(MP3_ADMIN_CALC_PLUS);
 			}
 			else {
 				// a - b
 				b = random(1, a);
 				c = a - b;
-				waitForTrackToFinish(blackStatusColor, 0);
+				waitForTrackToFinish();
 				mp3.playMp3FolderTrack(MP3_ADMIN_CALC_MINUS);
 			}
-			waitForTrackToFinish(blackStatusColor, 0);
+			waitForTrackToFinish();
 			mp3.playMp3FolderTrack(b);
 			temp = voiceMenu(255, 0, 0, false);
 			if (temp != c) {
-				statusLedUpdate(BURST4, redStatusColor, 0);
 				return;
 			}
-			statusLedUpdate(BLINK, blueStatusColor, 500);
 		}
 		break;
 		}
@@ -1807,7 +1716,7 @@ void adminMenu(bool fromCard = false) {
 				delay(100);
 				mfrc522.PICC_HaltA();
 				mfrc522.PCD_StopCrypto1();
-				waitForTrackToFinish(greenStatusColor, 100);
+				waitForTrackToFinish();
 			}
 		}
 	}
@@ -1854,7 +1763,7 @@ void adminMenu(bool fromCard = false) {
 			0, true, tempCard.nfcFolderSettings.folder, special);
 
 		mp3.playMp3FolderTrack(MP3_CONFIGURE_BATCH_CARDS_INTRO);
-		waitForTrackToFinish(redStatusColor, 100);
+		waitForTrackToFinish();
 		for (uint8_t x = special; x <= special2; x++) {
 			mp3.playMp3FolderTrack(x);
 			tempCard.nfcFolderSettings.special = x;
@@ -1874,7 +1783,7 @@ void adminMenu(bool fromCard = false) {
 				delay(100);
 				mfrc522.PICC_HaltA();
 				mfrc522.PCD_StopCrypto1();
-				waitForTrackToFinish(greenStatusColor, 100);
+				waitForTrackToFinish();
 			}
 		}
 	}
@@ -1919,7 +1828,7 @@ void adminMenu(bool fromCard = false) {
 	case MENU_SUB_PROGRAMMING_MODE:
 	{
 		mp3.playMp3FolderTrack(MP3_PROGRAMMING_MODE_INTRO);
-		waitForTrackToFinish(redStatusColor, 100);
+		waitForTrackToFinish();
 		Serial.println(F("Programmiermodus aktiviert"));
 		
 		tempCard.cookie = cardCookie;
@@ -1932,7 +1841,7 @@ void adminMenu(bool fromCard = false) {
 				cancel = true;
 				Serial.println(F("Abgebrochen"));
 				mp3.playMp3FolderTrack(MP3_PROGRAMMING_MODE_FINISHED);
-				waitForTrackToFinish(redStatusColor, 100);
+				waitForTrackToFinish();
 				break;
 			}
 
@@ -1950,13 +1859,11 @@ void adminMenu(bool fromCard = false) {
 					return;
 				}
 				// blink blue, while waiting
-				statusLedUpdate(BLINK, blueStatusColor, 500);
 			} while (!mfrc522.PICC_IsNewCardPresent());
 
 			// RFID Karte wurde aufgelegt
 			if (mfrc522.PICC_ReadCardSerial()) {
 				// set status to solid blue
-				statusLedUpdate(SOLID, blueStatusColor, 0);
 				if(readCard(&newCard) == true){
 					WriteCardDataToSerial();
 				}
@@ -1974,7 +1881,7 @@ void adminMenu(bool fromCard = false) {
 				}
 				Serial.println(F("schreibe Karte..."));
 				writeCard(myCard);
-				waitForTrackToFinish(greenStatusColor, 100);
+				waitForTrackToFinish();
 				delay(100);
 
 				if(readCard(&newCard) == true){
@@ -2021,20 +1928,17 @@ uint8_t voiceMenu(int numberOfOptions, int startMessage, int messageOffset, bool
 		if(configBrightness){
 			tmpVal = mySettings.lightBrightness;
 			mySettings.lightBrightness = returnValue;
-			statusLedUpdate(SOLID, blueStatusColor, 100);
 			mySettings.lightBrightness = tmpVal;
 		}
 		if (pauseButton.pressedFor(LONG_PRESS)) {
 			mp3.playMp3FolderTrack(MP3_RESET_ABORTED);
 			ignorePauseButton = true;
 			if(configBrightness){
-				statusLedUpdate(SOLID, blackStatusColor, 100);
 			}
 			return defaultValue;
 		}
 		if (pauseButton.wasReleased()) {
 			if(configBrightness){
-				statusLedUpdate(SOLID, blackStatusColor, 100);
 			}
 			if (returnValue != 0) {
 				Serial.print(F("=== "));
@@ -2051,10 +1955,10 @@ uint8_t voiceMenu(int numberOfOptions, int startMessage, int messageOffset, bool
 			Serial.println(returnValue);
 			mp3.playMp3FolderTrack(messageOffset + returnValue);
 			if(!configBrightness){
-				waitForTrackToFinish(yellowStatusColor, 100);
+				waitForTrackToFinish();
 			}
 			else{
-				waitForTrackToFinish(blueStatusColor, 100, SOLID);
+				waitForTrackToFinish();
 			}
 			ignoreUpButton = true;
 		}
@@ -2069,7 +1973,7 @@ uint8_t voiceMenu(int numberOfOptions, int startMessage, int messageOffset, bool
 				//mp3.pause();
 				mp3.playMp3FolderTrack(messageOffset + returnValue);
 				if (preview) {
-					waitForTrackToFinish(redStatusColor, 100);
+					waitForTrackToFinish();
 					if (previewFromFolder == 0) {
 						mp3.playFolderTrack(returnValue, 1);
 					}
@@ -2091,10 +1995,10 @@ uint8_t voiceMenu(int numberOfOptions, int startMessage, int messageOffset, bool
 			Serial.println(returnValue);
 			mp3.playMp3FolderTrack(messageOffset + returnValue);
 			if(!configBrightness){
-				waitForTrackToFinish(yellowStatusColor, 100);
+				waitForTrackToFinish();
 			}
 			else{
-				waitForTrackToFinish(blueStatusColor, 100, SOLID);
+				waitForTrackToFinish();
 			}
 			ignoreDownButton = true;
 		}
@@ -2107,7 +2011,7 @@ uint8_t voiceMenu(int numberOfOptions, int startMessage, int messageOffset, bool
 				Serial.println(returnValue);
 				mp3.playMp3FolderTrack(messageOffset + returnValue);
 				if (preview) {
-					waitForTrackToFinish(redStatusColor, 100);
+					waitForTrackToFinish();
 					if (previewFromFolder == 0) {
 						mp3.playFolderTrack(returnValue, 1);
 					}
@@ -2137,7 +2041,6 @@ void resetCard() {
 			mp3.playMp3FolderTrack(MP3_RESET_ABORTED);
 			return;
 		}
-		statusLedUpdate(PULSE, whiteStatusColor, 100);
 	} while (!mfrc522.PICC_IsNewCardPresent());
 
 	if (!mfrc522.PICC_ReadCardSerial()) {
@@ -2306,12 +2209,10 @@ bool readCard(nfcTagObject *nfcTag) {
 					// @todo check if correct, should show unlock led when modifier deleted
 					switch (tempCard.nfcFolderSettings.mode) {
 					case MODIFIER_LOCKED: {
-						statusLedUpdate(BURST8, greenStatusColor, 0);
 					}
 										  break;
 
 					case MODIFIER_REPEAT_SINGLE: {
-						statusLedUpdate(BURST8, pinkStatusColor, 0);
 					}
 												 break;
 					}
@@ -2328,7 +2229,7 @@ bool readCard(nfcTagObject *nfcTag) {
 					}
 					else {
 						mp3.playMp3FolderTrack(MP3_MODIFIER_REMOVED_SOUND);
-						waitForTrackToFinish(blackStatusColor, 200, SOLID);
+						waitForTrackToFinish();
 						delay(100);
 						mp3.pause();
 					}
@@ -2366,7 +2267,6 @@ bool readCard(nfcTagObject *nfcTag) {
 								   break;
 			case MODIFIER_REPEAT_SINGLE: {
 				//@todo check if correct
-				statusLedUpdate(BURST4, pinkStatusColor, 0);
 				activeModifier = new RepeatSingleModifier();
 			}
 										 break;
@@ -2523,169 +2423,6 @@ bool checkTwo(uint8_t a[], uint8_t b[]) {
 		}
 	}
 	return true;
-}
-
-void statusLedUpdate(uint8_t statusLedAction, cRGB ledColor = defaultStatusColor, uint16_t statusLedUpdateInterval = 0) {
-	static bool statusLedState = true;
-	static bool statusLedDirection = false;
-	static int16_t statusLedFade = 255;
-	static uint64_t statusLedOldMillis;
-
-	if (isPowerOff || mySettings.light == true) {
-		return;
-	}
-
-	if (millis() - statusLedOldMillis >= statusLedUpdateInterval) {
-		statusLedOldMillis = millis();
-		switch (statusLedAction) {
-		case SOLID: {
-			statusLedFade = 255;
-			statusLedUpdateHal(ledColor, 255);
-		}
-		break;
-		case PULSE: {
-			if (statusLedDirection) {
-				statusLedFade += 10;
-				if (statusLedFade >= 255) {
-					statusLedFade = 255;
-					statusLedDirection = !statusLedDirection;
-				}
-			}
-			else {
-				statusLedFade -= 10;
-				if (statusLedFade <= 0) {
-					statusLedFade = 0;
-					statusLedDirection = !statusLedDirection;
-				}
-			}
-			statusLedUpdateHal(ledColor, statusLedFade);
-		}
-		break;
-
-		case BLINK: {
-			statusLedState = !statusLedState;
-			if (statusLedState) statusLedUpdateHal(ledColor, 255);
-			else statusLedUpdateHal(blackStatusColor, 0);
-		}
-		break;
-		case BURST4: {
-			for (uint8_t i = 0; i < 8; i++) {
-				statusLedState = !statusLedState;
-				if (statusLedState) statusLedUpdateHal(ledColor, 255);
-				else statusLedUpdateHal(blackStatusColor, 0);
-				delay(100);
-			}
-		}
-		break;
-		case TOGGLE: {
-			if (currentLedIndex >= StatusLedCount) {
-				currentLedIndex = 0;
-			}
-			statusLedUpdateHal(ledColor, 255, currentLedIndex++);
-		}
-		break;
-		case TOGGLE2: {
-			if (currentLedIndex >= StatusLedCount) {
-				currentLedIndex = 0;
-			}
-			statusLedUpdateHal(ledColor, 255, currentLedIndex, (currentLedIndex + 2) % StatusLedCount);
-			currentLedIndex++;
-			
-		}
-		break;
-		case BURST8: {
-			for (uint8_t i = 0; i < 16; i++) {
-				statusLedState = !statusLedState;
-				if (statusLedState) statusLedUpdateHal(ledColor, 255);
-				else statusLedUpdateHal(blackStatusColor, 0);
-				delay(100);
-			}
-		}
-		break;
-		}
-	}
-}
-
-void displayVolumeStatus() {
-	if (isPowerOff || mySettings.light == true) {
-		return;
-	}
-
-	int value = map(volume, mySettings.minVolume, mySettings.maxVolume, 0, 6);
-	cRGB ledColor;
-	int brightness = 255;
-	// adjust brighntess by global brightness
-	if (brightness > 0) {
-		brightness = ((brightness / 255.0) * globalBrightness);
-	}
-
-	// update led buffer
-	for (uint8_t i = 0; i < StatusLedCount; i++) {
-		if (value >= 0) {
-			if (i <= value) {
-
-				if (value <= 2)
-				{
-					ledColor = greenStatusColor;
-				}
-				else if (value > 2 && value <= 4) {
-					ledColor = orangeStatusColor;
-				}
-				else if (value > 4) {
-					ledColor = redStatusColor;
-				}
-				// apply brightness and max brightness
-				ledColor.r = (uint8_t)(((brightness / 255.0) * ledColor.r) * (min(mySettings.lightBrightness, 100) / 100.0));
-				ledColor.g = (uint8_t)(((brightness / 255.0) * ledColor.g) * (min(mySettings.lightBrightness, 100) / 100.0));
-				ledColor.b = (uint8_t)(((brightness / 255.0) * ledColor.b) * (min(mySettings.lightBrightness, 100) / 100.0));
-				ledColor.w = (uint8_t)(((brightness / 255.0) * ledColor.w) * (min(mySettings.lightBrightness, 100) / 100.0));
-			}
-			else {
-				ledColor = blackStatusColor;
-			}
-		}
-		else {
-			ledColor = blackStatusColor;
-		}
-		statusLed.set_crgb_at(i, ledColor);
-	}
-
-	// send out the updated buffer
-	statusLed.sync();
-	delay(200); // give a bit time to see status
-}
-
-void statusLedUpdateHal(cRGB ledColor, int16_t brightness, int8_t ledIndex = -1, int8_t led2Index = -1) {
-
-	// adjust brighntess by global brightness
-	if (brightness > 0) {
-		brightness = ((brightness / 255.0) * globalBrightness);
-	}
-
-	// apply brightness and max brightness
-	ledColor.r = (uint8_t)(((brightness / 255.0) * ledColor.r) * (min(mySettings.lightBrightness, 100) / 100.0));
-	ledColor.g = (uint8_t)(((brightness / 255.0) * ledColor.g) * (min(mySettings.lightBrightness, 100) / 100.0));
-	ledColor.b = (uint8_t)(((brightness / 255.0) * ledColor.b) * (min(mySettings.lightBrightness, 100) / 100.0));
-	ledColor.w = (uint8_t)(((brightness / 255.0) * ledColor.w) * (min(mySettings.lightBrightness, 100) / 100.0));
-
-	// update led buffer
-	for (uint8_t i = 0; i < StatusLedCount; i++) {
-		if (ledIndex < 0 && led2Index < 0) {
-			statusLed.set_crgb_at(i, ledColor);
-		}
-		else {
-			if (i != ledIndex && i != led2Index) {
-				statusLed.set_crgb_at(i, blackStatusColor);
-			}
-			else {
-				statusLed.set_crgb_at(i, ledColor);
-			}
-
-		}
-	}
-
-	// send out the updated buffer
-	statusLed.sync();
 }
 
 uint8_t GetByte(char c)
