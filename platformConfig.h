@@ -18,10 +18,12 @@ typedef unsigned long systime_t;
 #define RECREATE_QUEUE_ON_END
 
 // Global power management pins
+#define PIN_OPEN_ANALOG    A7
 #define PIN_BUTTON_LED	    3
 #define PIN_KEEP_ALIVE      5
-#define PIN_POWER_ON        7
-#define PIN_OPEN_ANALOG    A7
+
+#define PIN_POWER_SWITCH               7
+#define PIN_POWER_SWITCH_ON_STATE   HIGH
 
 // Pins used for communication with the DF-Player module
 // RX on the Arduino goes to DF-Player TX and vice versa.

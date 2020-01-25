@@ -1078,7 +1078,7 @@ void checkStandbyAtMillis() {
 void powerOff() {
 	Serial.println(F("=== power off!"));
 	// enter sleep state
-	digitalWrite(shutdownPin, LOW);
+	digitalWrite(PIN_POWER_SWITCH, !PIN_POWER_SWITCH_ON_STATE);
 	//delay(500);
 	isPowerOff = true;
 
@@ -1114,6 +1114,14 @@ void waitForTrackToFinish() {
 }
 
 void setup() {
+	/*
+	 * Set power switch pin as soon as possible.
+	 * This is especially important if the power switch circuit
+	 * is just a simple self locking circuit.
+	 */
+    pinMode(PIN_POWER_SWITCH, OUTPUT);
+	digitalWrite(PIN_POWER_SWITCH, PIN_POWER_SWITCH_ON_STATE);
+
 	Serial.begin(115200); // Es gibt ein paar Debug Ausgaben über die serielle Schnittstelle
 
 	// Wert für randomSeed() erzeugen durch das mehrfache Sammeln von rauschenden LSBs eines offenen Analogeingangs
@@ -1143,8 +1151,6 @@ void setup() {
 	setStandbyTimer();
 
 	// DFPlayer Mini initialisieren
-    pinMode(shutdownPin, OUTPUT);
-	digitalWrite(shutdownPin, HIGH);
 	delay(50);
 	mp3.begin();
 
