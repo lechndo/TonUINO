@@ -9,6 +9,8 @@
 #include "constants.h"
 #include "structs.h"
 
+#include "platformConfig.h"
+
 /*
    _____         _____ _____ _____ _____
   |_   _|___ ___|  |  |     |   | |     |
@@ -20,32 +22,16 @@
 	Information and contribution at https://tonuino.de.
 */
 
-// uncomment the below line to enable remix of queue at end
-#define RECREATE_QUEUE_ON_END
 
 static const uint32_t cardCookie = 322417479;
 bool configBrightness = false;
 
-// MFRC522
-#define RST_PIN 9                 // Configurable, see typical pin layout above
-#define SS_PIN 10                 // Configurable, see typical pin layout above
-
-#define buttonPause A0
-#define buttonUp A1
-#define buttonDown A2
-#define busyPin 4
 #define shutdownPin 7
-#define openAnalogPin A7
-#define buttonReset A4
-
 
 bool isPowerOff = false;
 
-
-#define LONG_PRESS 1000
-
 // DFPlayer Mini
-SoftwareSerial mySoftwareSerial(2, 3); // RX, TX
+SoftwareSerial mySoftwareSerial(PIN_DFPLAYER_RX, PIN_DFPLAYER_TX); // RX, TX
 uint16_t numTracksInFolder;
 uint16_t currentTrack;
 uint16_t firstTrack;
@@ -65,6 +51,7 @@ void powerOff();
 
 bool askCode(uint8_t *code);
 bool ReadFromSerial();
+void readButtons();
 
 void setStandbyTimer();
 void disableStandbyTimer();
@@ -853,7 +840,7 @@ public:
 	}
 };
 
-MFRC522 mfrc522(SS_PIN, RST_PIN); // Create MFRC522
+MFRC522 mfrc522(PIN_RFID_READER_SS, PIN_RFID_READER_RST); // Create MFRC522
 MFRC522::MIFARE_Key key;
 bool successRead;
 byte sector = 1;
@@ -1063,9 +1050,9 @@ static void previousTrack() {
 	delay(1000);
 }
 
-Button pauseButton(buttonPause);
-Button upButton(buttonUp);
-Button downButton(buttonDown);
+Button pauseButton(PIN_BUTTON_PAUSE);
+Button upButton(PIN_BUTTON_UP);
+Button downButton(PIN_BUTTON_DOWN);
 
 bool ignorePauseButton = false;
 bool ignoreUpButton = false;
@@ -1109,7 +1096,7 @@ void powerOff() {
 }
 
 bool isPlaying() {
-	return !digitalRead(busyPin);
+	return !digitalRead(PIN_DFPLAYER_BUSY);
 }
 
 void waitForTrackToFinish() {
@@ -1132,7 +1119,7 @@ void setup() {
 	// Wert für randomSeed() erzeugen durch das mehrfache Sammeln von rauschenden LSBs eines offenen Analogeingangs
 	uint32_t ADCSeed;
 	for (uint8_t i = 0; i < 128; i++) {
-		ADCSeed ^= (analogRead(openAnalogPin) & 0x1) << (i % 32);
+		ADCSeed ^= (analogRead(PIN_OPEN_ANALOG) & 0x1) << (i % 32);
 	}
 	randomSeed(ADCSeed); // Zufallsgenerator initialisieren
 
@@ -1147,7 +1134,7 @@ void setup() {
 	Serial.println(F("Information and contribution at https://tonuino.de.\n"));
 
 	// Busy Pin
-	pinMode(busyPin, INPUT);
+	pinMode(PIN_DFPLAYER_BUSY, INPUT);
 
 	// load Settings from EEPROM
 	loadSettingsFromFlash();
@@ -1176,13 +1163,15 @@ void setup() {
 		key.keyByte[i] = 0xFF;
 	}
 
-	pinMode(buttonPause, INPUT_PULLUP);
-	pinMode(buttonUp, INPUT_PULLUP);
-	pinMode(buttonDown, INPUT_PULLUP);
-	pinMode(buttonReset, INPUT_PULLUP);
+	pinMode(PIN_BUTTON_PAUSE, INPUT_PULLUP);
+	pinMode(PIN_BUTTON_UP,    INPUT_PULLUP);
+	pinMode(PIN_BUTTON_DOWN,  INPUT_PULLUP);
+
+	readButtons();
+	readButtons();
 
 	// RESET
-	if (digitalRead(buttonReset) == LOW) 
+	if (pauseButton.isPressed() && upButton.isPressed() && downButton.isPressed())
     {
 		Serial.println(F("Reset -> EEPROM wird gelöscht"));
 		for (int i = 0; i < EEPROM.length(); i++) {
