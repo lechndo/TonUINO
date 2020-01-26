@@ -10,6 +10,7 @@
 #include "structs.h"
 
 #include "platformConfig.h"
+#include "KeepAlive.hpp"
 
 /*
    _____         _____ _____ _____ _____
@@ -1078,6 +1079,7 @@ void checkStandbyAtMillis() {
 void powerOff() {
 	Serial.println(F("=== power off!"));
 	// enter sleep state
+	KeepAlive::set(false); // disable keep-alive circuit
 	digitalWrite(PIN_POWER_SWITCH, !PIN_POWER_SWITCH_ON_STATE);
 	//delay(500);
 	isPowerOff = true;
@@ -1121,6 +1123,9 @@ void setup() {
 	 */
     pinMode(PIN_POWER_SWITCH, OUTPUT);
 	digitalWrite(PIN_POWER_SWITCH, PIN_POWER_SWITCH_ON_STATE);
+
+	/* Init the keep alive circuit - switches it on during start phase */
+	KeepAlive::setup();
 
 	Serial.begin(115200); // Es gibt ein paar Debug Ausgaben über die serielle Schnittstelle
 
@@ -1383,6 +1388,7 @@ void playShortCut(uint8_t shortCut) {
 void loop() {
 	do {
 		checkStandbyAtMillis();
+		KeepAlive::loop();
 		mp3.loop();
 
 		// Modifier : WIP!

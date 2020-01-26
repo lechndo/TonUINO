@@ -20,7 +20,12 @@ typedef unsigned long systime_t;
 // Global power management pins
 #define PIN_OPEN_ANALOG    A7
 #define PIN_BUTTON_LED	    3
-#define PIN_KEEP_ALIVE      5
+
+#define PIN_KEEP_ALIVE                 5
+// actually these are the same as the module defaults
+#define PIN_KEEP_ALIVE_ON_STATE     HIGH
+#define PIN_KEEP_ALIVE_CICLE_MS    10000
+#define PIN_KEEP_ALIVE_ON_MS         500
 
 #define PIN_POWER_SWITCH               7
 #define PIN_POWER_SWITCH_ON_STATE   HIGH
