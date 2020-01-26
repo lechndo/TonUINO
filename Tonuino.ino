@@ -11,6 +11,7 @@
 
 #include "platformConfig.h"
 #include "KeepAlive.hpp"
+#include "ButtonLed.hpp"
 
 /*
    _____         _____ _____ _____ _____
@@ -1079,6 +1080,7 @@ void checkStandbyAtMillis() {
 void powerOff() {
 	Serial.println(F("=== power off!"));
 	// enter sleep state
+	ButtonLed::set(0); // switch button LEDs off
 	KeepAlive::set(false); // disable keep-alive circuit
 	digitalWrite(PIN_POWER_SWITCH, !PIN_POWER_SWITCH_ON_STATE);
 	//delay(500);
@@ -1126,6 +1128,8 @@ void setup() {
 
 	/* Init the keep alive circuit - switches it on during start phase */
 	KeepAlive::setup();
+	/* Init button LED brightness handling */
+	ButtonLed::setup();
 
 	Serial.begin(115200); // Es gibt ein paar Debug Ausgaben über die serielle Schnittstelle
 
@@ -1389,6 +1393,7 @@ void loop() {
 	do {
 		checkStandbyAtMillis();
 		KeepAlive::loop();
+		ButtonLed::loop();
 		mp3.loop();
 
 		// Modifier : WIP!
