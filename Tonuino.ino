@@ -1055,6 +1055,10 @@ static void previousTrack() {
 Button pauseButton(PIN_BUTTON_PAUSE);
 Button upButton(PIN_BUTTON_UP);
 Button downButton(PIN_BUTTON_DOWN);
+#ifdef VOLUME_BUTTONS
+Button volUpButton(PIN_BUTTON_VOL_UP);
+Button volDownButton(PIN_BUTTON_VOL_DOWN);
+#endif
 
 bool ignorePauseButton = false;
 bool ignoreUpButton = false;
@@ -1181,6 +1185,10 @@ void setup() {
 	pinMode(PIN_BUTTON_PAUSE, INPUT_PULLUP);
 	pinMode(PIN_BUTTON_UP,    INPUT_PULLUP);
 	pinMode(PIN_BUTTON_DOWN,  INPUT_PULLUP);
+	#ifdef VOLUME_BUTTONS
+	pinMode(PIN_BUTTON_VOL_UP, INPUT_PULLUP);
+	pinMode(PIN_BUTTON_VOL_DOWN, INPUT_PULLUP);
+	#endif
 
 	readButtons();
 	readButtons();
@@ -1233,6 +1241,10 @@ void readButtons() {
 	pauseButton.read();
 	upButton.read();
 	downButton.read();
+#ifdef VOLUME_BUTTONS
+	volUpButton.read();
+	volDownButton.read();
+#endif
 }
 
 void volumeUpButton() {
@@ -1499,6 +1511,7 @@ void loop() {
 		}
 
 		if (upButton.pressedFor(LONG_PRESS)) {
+#ifndef VOLUME_BUTTONS
 			if (isPlaying()) {
 				if (!mySettings.invertVolumeButtons) {
 					volumeUpButton();
@@ -1510,6 +1523,7 @@ void loop() {
 			else {
 				playShortCut(SHORTCUT_UP_NEXT_BUTTON);
 			}
+#endif
 			ignoreUpButton = true;
 		}
 		else if (upButton.wasReleased()) {
@@ -1525,6 +1539,7 @@ void loop() {
 		}
 
 		if (downButton.pressedFor(LONG_PRESS)) {
+#ifndef VOLUME_BUTTONS
 			if (isPlaying()) {
 				if (!mySettings.invertVolumeButtons) {
 					volumeDownButton();
@@ -1536,6 +1551,7 @@ void loop() {
 			else {
 				playShortCut(SHORTCUT_DOWN_PREVIOUS_BUTTON);
 			}
+#endif
 			ignoreDownButton = true;
 		}
 		else if (downButton.wasReleased()) {
@@ -1549,6 +1565,35 @@ void loop() {
 			}
 			ignoreDownButton = false;
 		}
+
+#ifdef VOLUME_BUTTONS
+	    if (volUpButton.wasReleased()) {
+	      if (isPlaying()) {
+	        if (!mySettings.invertVolumeButtons) {
+	          volumeUpButton();
+	        }
+	        else {
+	          nextButton();
+	        }
+	      }
+	      else if (mySettings.invertVolumeButtons) {
+	        playShortCut(SHORTCUT_UP_NEXT_BUTTON);
+	      }
+	    }
+	    if (volDownButton.wasReleased()) {
+	      if (isPlaying()) {
+	        if (!mySettings.invertVolumeButtons) {
+	          volumeDownButton();
+	        }
+	        else {
+	          previousButton();
+	        }
+	      }
+	      else if (mySettings.invertVolumeButtons){
+	        playShortCut(SHORTCUT_DOWN_PREVIOUS_BUTTON);
+	      }
+	    }
+#endif
 
 		if (isPlaying() && myFolder->mode != MODE_DEFAULT) {
 

@@ -18,6 +18,10 @@ typedef unsigned long systime_t;
 // uncomment the below line to enable remix of queue at end
 #define RECREATE_QUEUE_ON_END
 
+// uncomment line below if you have separate volume buttons
+// if so please also define the correct pins in the button pin section
+#define VOLUME_BUTTONS
+
 // Global power management pins
 #define PIN_OPEN_ANALOG    A7
 
