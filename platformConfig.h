@@ -12,6 +12,7 @@ typedef unsigned long systime_t;
 
 // Global settings
 #define LONG_PRESS       1000 // milliseconds
+#define VERY_LONG_PRESS  5000 // milliseconds
 #define DEFAULT_VOLUME     10 // default value for volume setings (0-30)
 
 // uncomment the below line to enable remix of queue at end

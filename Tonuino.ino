@@ -1404,8 +1404,17 @@ void loop() {
 		// Buttons werden nun über JC_Button gehandelt, dadurch kann jede Taste doppelt belegt werden
 		readButtons();
 
+		// instant shutdown
+		if ( upButton.pressedFor(VERY_LONG_PRESS) &&
+			 downButton.pressedFor(VERY_LONG_PRESS)) {
+			mp3.pause();
+			powerOff();
+		}
+
 		// admin menu
-		if ((pauseButton.pressedFor(LONG_PRESS) || upButton.pressedFor(LONG_PRESS) || downButton.pressedFor(LONG_PRESS)) && pauseButton.isPressed() && upButton.isPressed() && downButton.isPressed()) {
+		// at least one button needs to be pressed long and the other also need to be pressed to enter.
+		if ( (pauseButton.pressedFor(LONG_PRESS) || upButton.pressedFor(LONG_PRESS) || downButton.pressedFor(LONG_PRESS))
+			&& pauseButton.isPressed() && upButton.isPressed() && downButton.isPressed()) {
 			mp3.pause();
 			do {
 				readButtons();
